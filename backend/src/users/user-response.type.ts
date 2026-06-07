@@ -1,4 +1,4 @@
-/*import { UserRole } from './user-role.enum';
+import { UserRole } from './user-role.enum';
 import { User } from './user.entity';
 
 export type UserResponse = {
@@ -21,4 +21,4 @@ export function toUserResponse(user: User): UserResponse {
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
   };
-}*/
+}

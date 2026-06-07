@@ -1,4 +1,4 @@
-/*import {
+import {
   Body,
   Controller,
   Delete,
@@ -78,4 +78,3 @@ export class UsersController {
     return this.usersService.delete(id);
   }
 }
-*/

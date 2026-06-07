@@ -1,0 +1,8 @@
+{
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/express": "^5.0.6",
+    "@types/passport": "^1.0.17",
+    "@types/passport-jwt": "^4.0.1"
+  }
+}

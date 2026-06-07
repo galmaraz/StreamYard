@@ -1,5 +1,6 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-
+import { InjectRepository } from '@nestjs/typeorm';
+import { Not, Repository } from 'typeorm';
 
 import { UserRole } from './user-role.enum';
 import { User } from './user.entity';
@@ -121,7 +122,3 @@ export class UsersService {
     await this.usersRepository.remove(user);
   }
 }
-function InjectRepository(User: typeof User): (target: typeof UsersService, propertyKey: undefined, parameterIndex: 0) => void {
-  throw new Error('Function not implemented.');
-}
-

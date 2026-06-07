@@ -1,0 +1,149 @@
+<main class="users-page">
+  <header class="topbar">
+    <div>
+      <a routerLink="/dashboard">Dashboard</a>
+      <p class="eyebrow">Administracion</p>
+      <h1>Usuarios</h1>
+      <p class="subtitle">Gestiona accesos, roles y estado de cuentas.</p>
+    </div>
+  </header>
+
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+
+  <section class="summary-grid">
+    <article>
+      <span>Total</span>
+      <strong>{{ users().length }}</strong>
+    </article>
+    <article>
+      <span>Activos</span>
+      <strong>{{ activeUsers() }}</strong>
+    </article>
+    <article>
+      <span>Inactivos</span>
+      <strong>{{ inactiveUsers() }}</strong>
+    </article>
+  </section>
+
+  <section class="layout">
+    <form class="user-form" (ngSubmit)="submit()">
+      <div class="form-heading">
+        <h2>{{ editing() ? 'Editar usuario' : 'Crear usuario' }}</h2>
+        @if (editing()) {
+          <button type="button" class="ghost" (click)="resetForm()">Nuevo</button>
+        }
+      </div>
+
+      <div class="form-grid">
+        <label>
+          Nombre
+          <input name="displayName" [(ngModel)]="form.displayName" required minlength="2" />
+        </label>
+
+        <label>
+          Email
+          <input name="email" type="email" [(ngModel)]="form.email" required />
+        </label>
+
+        <label>
+          Password
+          <input
+            name="password"
+            type="password"
+            [(ngModel)]="form.password"
+            [required]="!editing()"
+            minlength="8"
+            placeholder="{{ editing() ? 'Conservar actual' : 'Minimo 8 caracteres' }}"
+          />
+        </label>
+
+        <label>
+          Rol
+          <select name="role" [(ngModel)]="form.role" required>
+            @for (role of roles; track role) {
+              <option [value]="role">{{ roleLabel(role) }}</option>
+            }
+          </select>
+        </label>
+      </div>
+
+      <label class="checkbox">
+        <input name="isActive" type="checkbox" [(ngModel)]="form.isActive" />
+        Usuario activo
+      </label>
+
+      <div class="form-actions">
+        <button type="submit" [disabled]="loading()">
+          {{ loading() ? 'Guardando...' : editing() ? 'Guardar cambios' : 'Crear usuario' }}
+        </button>
+        @if (editing()) {
+          <button type="button" class="secondary" (click)="resetForm()">Cancelar</button>
+        }
+      </div>
+    </form>
+
+    <section class="users-table-card">
+      <div class="table-heading">
+        <h2>Listado de usuarios</h2>
+        <span>{{ users().length }} registro(s)</span>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Usuario</th>
+              <th>Rol</th>
+              <th>Estado</th>
+              <th>Creado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (user of users(); track user.id) {
+              <tr [class.inactive]="!user.isActive">
+                <td data-label="Usuario">
+                  <div class="identity">
+                    <span class="avatar">{{ user.displayName.charAt(0).toUpperCase() }}</span>
+                    <div>
+                      <strong>{{ user.displayName }}</strong>
+                      <small>{{ user.email }}</small>
+                    </div>
+                  </div>
+                </td>
+                <td data-label="Rol">
+                  <span class="badge role" [class]="user.role">{{ roleLabel(user.role) }}</span>
+                </td>
+                <td data-label="Estado">
+                  <span class="badge state" [class.active]="user.isActive">
+                    {{ user.isActive ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </td>
+                <td data-label="Creado">{{ userDate(user) }}</td>
+                <td data-label="Acciones">
+                  <div class="actions">
+                    <button type="button" class="secondary" (click)="editUser(user)">
+                      Editar
+                    </button>
+                    @if (user.isActive) {
+                      <button type="button" class="danger" (click)="deactivateUser(user)">
+                        Desactivar
+                      </button>
+                    } @else {
+                      <button type="button" (click)="activateUser(user)">Activar</button>
+                    }
+                    <button type="button" class="danger outline" (click)="deleteUser(user)">
+                      Eliminar
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </section>
+</main>

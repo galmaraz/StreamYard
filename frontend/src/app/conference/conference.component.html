@@ -1,0 +1,615 @@
+<main class="conference">
+  <header class="topbar">
+    <div class="room-heading">
+      <a routerLink="/dashboard">Dashboard</a>
+      <div>
+        <p class="eyebrow">Sala en vivo</p>
+        <h1>{{ room()?.title || 'Conectando sala...' }}</h1>
+      </div>
+    </div>
+    <div class="topbar-status">
+      <span class="role-badge">{{ isHost() ? 'Host' : 'Invitado' }}</span>
+      <span class="connection" [class.online]="connected()">
+        {{ connected() ? 'En linea' : 'Reconectando' }}
+      </span>
+    </div>
+  </header>
+
+  <section class="alerts">
+    @if (error()) {
+      <p class="error">{{ error() }}</p>
+    }
+
+    @if (mediaError()) {
+      <p class="error">{{ mediaError() }}</p>
+    }
+
+    @if (kicked()) {
+      <p class="error">Fuiste expulsado de la sala por el host.</p>
+    }
+  </section>
+
+  <section class="stage">
+    <section class="video-stage">
+      <div class="stage-toolbar">
+        <div class="stage-status">
+          <span>{{ liveParticipants().length }} participante(s)</span>
+          <span class="spectator-pill">{{ spectatorCount() }} espectador(es)</span>
+          <span>{{ mediaReady() ? 'Media local activa' : 'Media pendiente' }}</span>
+        </div>
+
+        @if (isHost()) {
+          <div class="layout-selector">
+            <button
+              type="button"
+              [class.active]="stageLayout() === 'fullscreen'"
+              (click)="setStageLayout('fullscreen')"
+            >
+              Pantalla completa
+            </button>
+            <button
+              type="button"
+              [class.active]="stageLayout() === 'mainGuests'"
+              (click)="setStageLayout('mainGuests')"
+            >
+              Principal + invitados
+            </button>
+            <button
+              type="button"
+              [class.active]="stageLayout() === 'grid'"
+              (click)="setStageLayout('grid')"
+            >
+              Grid
+            </button>
+            <button
+              type="button"
+              class="feature-self"
+              [class.active]="isLocalMain()"
+              (click)="featureLocal()"
+            >
+              Mi camara
+            </button>
+          </div>
+        }
+      </div>
+
+      <div
+        class="broadcast-frame"
+        [class.frame-fullscreen]="stageLayout() === 'fullscreen'"
+        [class.frame-main-guests]="stageLayout() === 'mainGuests'"
+        [class.frame-grid]="stageLayout() === 'grid'"
+        [style.--scene-bg]="sceneBackground()"
+        [style.--scene-bg-image]="sceneBackgroundImageCss()"
+        [style.--scene-accent]="sceneAccent()"
+        [style.--banner-bg]="bannerBackground()"
+        [style.--banner-color]="bannerTextColor()"
+      >
+        <div
+          class="video-layout"
+          [class.fullscreen]="stageLayout() === 'fullscreen'"
+          [class.main-guests]="stageLayout() === 'mainGuests'"
+          [class.grid]="stageLayout() === 'grid'"
+          [class.grid-one]="stageLayout() === 'grid' && gridSizeClass() === 'grid-one'"
+          [class.grid-two]="stageLayout() === 'grid' && gridSizeClass() === 'grid-two'"
+          [class.grid-three]="stageLayout() === 'grid' && gridSizeClass() === 'grid-three'"
+          [class.grid-many]="stageLayout() === 'grid' && gridSizeClass() === 'grid-many'"
+        >
+          @if (stageLayout() === 'grid') {
+            <app-local-video
+              [stream]="localStream()"
+              [label]="localVideoLabel()"
+              [micEnabled]="micEnabled()"
+              [cameraEnabled]="localVideoVisible()"
+              [mediaReady]="mediaReady()"
+            />
+
+            @for (remote of remoteStreams(); track remote.socketId) {
+              <app-remote-video
+                [stream]="remote.stream"
+                [label]="participantNameBySocket(remote.socketId)"
+              />
+            }
+          } @else {
+            <div class="main-slot">
+              @if (isSceneMediaMain() && sceneVideoActive()) {
+                <div class="scene-media-placeholder"></div>
+              } @else if (isLocalMain()) {
+                <app-local-video
+                  [stream]="localStream()"
+                  [label]="localVideoLabel()"
+                  [micEnabled]="micEnabled()"
+                  [cameraEnabled]="localVideoVisible()"
+                  [mediaReady]="mediaReady()"
+                />
+              } @else {
+                @for (remote of remoteStreams(); track remote.socketId) {
+                  @if (isRemoteFeatured(remote.socketId)) {
+                    <app-remote-video
+                      [stream]="remote.stream"
+                      [label]="participantNameBySocket(remote.socketId)"
+                    />
+                  }
+                }
+
+                @if (!hasMainRemote()) {
+                  <app-local-video
+                    [stream]="localStream()"
+                    [label]="localVideoLabel()"
+                    [micEnabled]="micEnabled()"
+                    [cameraEnabled]="localVideoVisible()"
+                    [mediaReady]="mediaReady()"
+                  />
+                }
+              }
+            </div>
+
+            @if (stageLayout() === 'mainGuests') {
+              <div class="guest-strip">
+                @if (!isLocalMain() && !isSceneMediaMain()) {
+                  <app-local-video
+                    [stream]="localStream()"
+                    [label]="localVideoLabel()"
+                    [micEnabled]="micEnabled()"
+                    [cameraEnabled]="localVideoVisible()"
+                    [mediaReady]="mediaReady()"
+                    [compact]="true"
+                  />
+                }
+
+                @for (remote of remoteStreams(); track remote.socketId) {
+                  @if (!isRemoteFeatured(remote.socketId)) {
+                    <app-remote-video
+                      [stream]="remote.stream"
+                      [label]="participantNameBySocket(remote.socketId)"
+                      [compact]="true"
+                    />
+                  }
+                }
+              </div>
+            }
+          }
+
+          @if (sceneVideoActive()) {
+            <article
+              class="scene-media-card"
+              [class.compact]="stageLayout() === 'mainGuests' && !isSceneMediaMain()"
+              [class.media-main]="isSceneMediaMain()"
+              [class.hidden]="stageLayout() === 'fullscreen' && !isSceneMediaMain()"
+            >
+              @if (sceneYoutubeEmbedUrl()) {
+                <iframe
+                  #sceneYoutubeFrame
+                  [src]="sceneYoutubeEmbedUrl()"
+                  title="Video de YouTube"
+                  allow="autoplay; encrypted-media; picture-in-picture"
+                  allowfullscreen
+                ></iframe>
+              }
+              <div class="remote-info">
+                <strong>{{ sceneMediaTitle() || 'Video de YouTube' }}</strong>
+              </div>
+            </article>
+          }
+        </div>
+
+        @if (bannerVisible() && bannerText().trim()) {
+          <div
+            class="broadcast-banner"
+            [class.lowerThird]="bannerStyle() === 'lowerThird'"
+            [class.ticker]="bannerStyle() === 'ticker'"
+            [class.headline]="bannerStyle() === 'headline'"
+            [class.size-small]="bannerSize() === 'small'"
+            [class.size-medium]="bannerSize() === 'medium'"
+            [class.size-large]="bannerSize() === 'large'"
+          >
+            <span>{{ bannerText() }}</span>
+          </div>
+        }
+      </div>
+    </section>
+
+    <aside class="side-panel">
+      <div class="panel-tabs">
+        <button
+          type="button"
+          [class.active]="activeSidePanel() === 'participants'"
+          (click)="showParticipantsPanel()"
+        >
+          Participantes
+          <span>{{ liveParticipants().length }}</span>
+        </button>
+        <button
+          type="button"
+          [class.active]="activeSidePanel() === 'chat'"
+          (click)="showChatPanel()"
+        >
+          Chat
+          @if (messages().length > 0) {
+            <span>{{ messages().length }}</span>
+          }
+        </button>
+        @if (isHost()) {
+          <button
+            type="button"
+            [class.active]="activeSidePanel() === 'scene'"
+            (click)="showScenePanel()"
+          >
+            Escena
+          </button>
+        }
+      </div>
+
+      <section class="participants-panel" [class.hidden]="activeSidePanel() !== 'participants'">
+        <h2>Participantes</h2>
+        @if (joining()) {
+          <p>Entrando a la sala...</p>
+        }
+
+        <p class="spectator-summary">
+          Espectadores conectados: <strong>{{ spectatorCount() }}</strong>
+        </p>
+
+        @for (participant of liveParticipants(); track participant.id) {
+          <article class="participant-card" [class.self]="isSelf(participant)">
+            <div class="participant-avatar">
+              {{ participant.displayName.charAt(0).toUpperCase() }}
+            </div>
+            <div class="participant-info">
+              <strong>{{ participant.displayName }}</strong>
+              <span>
+                {{ participant.micEnabled ? 'Mic on' : 'Mic off' }} ·
+                {{ participant.cameraEnabled ? 'Cam on' : 'Cam off' }}
+                @if (participant.handRaised) {
+                  · Mano levantada
+                }
+              </span>
+            </div>
+            @if (isHost()) {
+              <div class="feature-actions">
+                <button
+                  type="button"
+                  class="feature-button"
+                  [class.active]="isFeatured(participant)"
+                  (click)="featureParticipant(participant)"
+                >
+                  {{ isFeatured(participant) ? 'Principal' : 'Destacar' }}
+                </button>
+              </div>
+            }
+            @if (isHost() && !isSelf(participant)) {
+              <div class="moderation-actions">
+                <button type="button" (click)="toggleParticipantMic(participant)">
+                  {{ participant.micEnabled ? 'Silenciar' : 'Activar mic' }}
+                </button>
+                <button type="button" (click)="toggleParticipantCamera(participant)">
+                  {{ participant.cameraEnabled ? 'Bloquear cam' : 'Activar cam' }}
+                </button>
+                @if (participant.handRaised) {
+                  <button type="button" (click)="lowerHand(participant)">
+                    Bajar mano
+                  </button>
+                }
+                <button type="button" class="danger" (click)="kickParticipant(participant)">
+                  Expulsar
+                </button>
+              </div>
+            }
+          </article>
+        }
+      </section>
+
+      <section class="chat-panel" [class.hidden]="activeSidePanel() !== 'chat'">
+        <h2>Chat</h2>
+        <div class="messages">
+          @if (messages().length === 0) {
+            <p class="empty-chat">Sin mensajes todavia.</p>
+          }
+
+          @for (message of messages(); track message.id) {
+            <article class="chat-message" [class.own]="message.userId === me()?.userId">
+              <strong>{{ message.displayName }}</strong>
+              <p>{{ message.content }}</p>
+            </article>
+          }
+        </div>
+
+        <form class="chat-form" (ngSubmit)="sendChatMessage()">
+          <input
+            name="chatMessage"
+            [(ngModel)]="chatMessage"
+            maxlength="500"
+            placeholder="Escribe un mensaje"
+            autocomplete="off"
+          />
+          <button type="submit" [disabled]="sendingMessage() || !chatMessage.trim()">
+            Enviar
+          </button>
+        </form>
+      </section>
+
+      @if (isHost()) {
+        <section class="scene-panel" [class.hidden]="activeSidePanel() !== 'scene'">
+          <h2>Escena</h2>
+
+          <div class="scene-block">
+            <label>Fondo de transmision</label>
+            <div class="preset-grid">
+              @for (preset of scenePresetOptions; track preset.value) {
+                <button
+                  type="button"
+                  class="preset-button"
+                  [class.active]="scenePreset() === preset.value"
+                  [style.--preset-bg]="preset.background"
+                  [style.--preset-accent]="preset.accent"
+                  (click)="setScenePreset(preset.value)"
+                >
+                  <span></span>
+                  {{ preset.label }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <div class="scene-row">
+            <label>
+              Color fondo
+              <input
+                type="color"
+                [ngModel]="sceneBackground()"
+                (ngModelChange)="setSceneBackground($event)"
+              />
+            </label>
+            <label>
+              Acento
+              <input
+                type="color"
+                [ngModel]="sceneAccent()"
+                (ngModelChange)="setSceneAccent($event)"
+              />
+            </label>
+          </div>
+
+          <div class="scene-block">
+            <div class="scene-header">
+              <label>Imagen de fondo</label>
+              <button
+                type="button"
+                class="toggle-button"
+                (click)="clearSceneBackgroundImage()"
+              >
+                Quitar
+              </button>
+            </div>
+            <input
+              class="banner-input"
+              type="url"
+              maxlength="500"
+              [ngModel]="sceneBackgroundImageUrl()"
+              (ngModelChange)="setSceneBackgroundImageUrl($event)"
+              placeholder="https://.../fondo.jpg"
+            />
+          </div>
+
+          <div class="scene-block">
+            <div class="scene-header">
+              <label>Banner inferior</label>
+              <button type="button" class="toggle-button" (click)="toggleBanner()">
+                {{ bannerVisible() ? 'Ocultar' : 'Mostrar' }}
+              </button>
+            </div>
+
+            <input
+              class="banner-input"
+              type="text"
+              maxlength="120"
+              [ngModel]="bannerText()"
+              (ngModelChange)="setBannerText($event)"
+              placeholder="Texto del banner"
+            />
+
+            <div class="segmented-control">
+              <button
+                type="button"
+                [class.active]="bannerStyle() === 'lowerThird'"
+                (click)="setBannerStyle('lowerThird')"
+              >
+                Lower third
+              </button>
+              <button
+                type="button"
+                [class.active]="bannerStyle() === 'ticker'"
+                (click)="setBannerStyle('ticker')"
+              >
+                Barra
+              </button>
+              <button
+                type="button"
+                [class.active]="bannerStyle() === 'headline'"
+                (click)="setBannerStyle('headline')"
+              >
+                Titulo
+              </button>
+            </div>
+
+            <div class="segmented-control">
+              <button
+                type="button"
+                [class.active]="bannerSize() === 'small'"
+                (click)="setBannerSize('small')"
+              >
+                Pequeno
+              </button>
+              <button
+                type="button"
+                [class.active]="bannerSize() === 'medium'"
+                (click)="setBannerSize('medium')"
+              >
+                Mediano
+              </button>
+              <button
+                type="button"
+                [class.active]="bannerSize() === 'large'"
+                (click)="setBannerSize('large')"
+              >
+                Grande
+              </button>
+            </div>
+          </div>
+
+          <div class="scene-block">
+            <div class="scene-header">
+              <label>Textos guardados</label>
+              <button type="button" class="toggle-button" (click)="saveSceneText()">
+                {{ editingSceneTextId() ? 'Actualizar' : 'Guardar' }}
+              </button>
+            </div>
+
+            <input
+              class="banner-input"
+              type="text"
+              maxlength="50"
+              name="sceneTextLabel"
+              [(ngModel)]="sceneTextLabel"
+              placeholder="Etiqueta del texto"
+            />
+            <input
+              class="banner-input"
+              type="text"
+              maxlength="120"
+              name="sceneTextValue"
+              [(ngModel)]="sceneTextValue"
+              placeholder="Texto para lower third o banner"
+            />
+
+            <div class="scene-text-list">
+              @for (item of sceneTexts(); track item.id) {
+                <article>
+                  <div>
+                    <strong>{{ item.label }}</strong>
+                    <span>{{ item.text }}</span>
+                  </div>
+                  <button type="button" (click)="useSceneText(item)">Usar</button>
+                  <button type="button" (click)="editSceneText(item)">Editar</button>
+                  <button type="button" class="danger-mini" (click)="deleteSceneText(item)">
+                    Borrar
+                  </button>
+                </article>
+              }
+            </div>
+          </div>
+
+          <div class="scene-block">
+            <div class="scene-header">
+              <label>Video de YouTube</label>
+              <button type="button" class="toggle-button" (click)="toggleSceneMedia()">
+                {{ sceneMediaVisible() ? 'Ocultar' : 'Mostrar' }}
+              </button>
+            </div>
+
+            <input
+              class="banner-input"
+              type="text"
+              maxlength="80"
+              [ngModel]="sceneMediaTitle()"
+              (ngModelChange)="setSceneMediaTitle($event)"
+              placeholder="Nombre en pantalla"
+            />
+            <input
+              class="banner-input"
+              type="url"
+              maxlength="500"
+              [ngModel]="sceneMediaUrl()"
+              (ngModelChange)="setSceneMediaUrl($event)"
+              placeholder="https://www.youtube.com/watch?v=..."
+            />
+
+            <div class="segmented-control media-controls">
+              <button type="button" [disabled]="!sceneVideoActive()" (click)="playSceneMedia()">
+                Reproducir
+              </button>
+              <button type="button" [disabled]="!sceneVideoActive()" (click)="pauseSceneMedia()">
+                Pausar
+              </button>
+              <button type="button" [disabled]="!sceneVideoActive()" (click)="restartSceneMedia()">
+                Reiniciar
+              </button>
+              <button type="button" (click)="clearSceneMedia()">Limpiar</button>
+            </div>
+
+            @if (sceneVideoActive()) {
+              <button type="button" class="feature-button" (click)="featureSceneMedia()">
+                Poner video en pantalla completa
+              </button>
+            }
+          </div>
+
+          <div class="scene-row">
+            <label>
+              Fondo banner
+              <input
+                type="color"
+                [ngModel]="bannerBackground()"
+                (ngModelChange)="setBannerBackground($event)"
+              />
+            </label>
+            <label>
+              Texto banner
+              <input
+                type="color"
+                [ngModel]="bannerTextColor()"
+                (ngModelChange)="setBannerTextColor($event)"
+              />
+            </label>
+          </div>
+        </section>
+      }
+    </aside>
+  </section>
+
+  <footer class="controls">
+    <div class="control-group">
+      <button
+        type="button"
+        class="control-button"
+        [class.off]="!micEnabled()"
+        (click)="toggleMic()"
+      >
+        {{ micEnabled() ? 'Silenciar mic' : 'Activar mic' }}
+      </button>
+      <button
+        type="button"
+        class="control-button"
+        [class.off]="!cameraEnabled()"
+        (click)="toggleCamera()"
+      >
+        {{ cameraEnabled() ? 'Apagar camara' : 'Activar camara' }}
+      </button>
+      <button
+        type="button"
+        class="control-button"
+        [class.raised]="screenSharing()"
+        (click)="toggleScreenShare()"
+      >
+        {{ screenSharing() ? 'Detener pantalla' : 'Compartir pantalla' }}
+      </button>
+      @if (!isHost()) {
+        <button
+          type="button"
+          class="control-button"
+          [class.raised]="me()?.handRaised"
+          (click)="toggleHand()"
+        >
+          {{ me()?.handRaised ? 'Bajar mano' : 'Levantar mano' }}
+        </button>
+      }
+    </div>
+
+    <span class="signal-status">
+      {{ lastSignal() || 'Esperando peer WebRTC' }}
+    </span>
+
+    <button type="button" class="leave-button" (click)="leaveConference()">
+      Salir
+    </button>
+  </footer>
+</main>

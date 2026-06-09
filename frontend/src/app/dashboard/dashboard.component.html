@@ -1,0 +1,86 @@
+<main class="dashboard">
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">Dashboard</p>
+      <h1>Salas en vivo</h1>
+      <p class="subtitle">Gestiona reuniones, invitaciones y transmisiones activas.</p>
+    </div>
+    <div class="user-box">
+      <span>{{ user()?.displayName || 'Host' }}</span>
+      @if (user()?.role === 'admin') {
+        <a routerLink="/users">Usuarios</a>
+      }
+      <button type="button" (click)="logout()">Salir</button>
+    </div>
+  </header>
+
+  <section class="create-room">
+    <form (ngSubmit)="createRoom()">
+      <label>
+        Nueva sala
+        <input
+          name="title"
+          [(ngModel)]="title"
+          placeholder="Ej. Reunion semanal"
+          required
+          minlength="3"
+        />
+      </label>
+      <button type="submit" [disabled]="loading()">
+        {{ loading() ? 'Creando...' : 'Crear sala' }}
+      </button>
+    </form>
+    @if (error()) {
+      <p class="error">{{ error() }}</p>
+    }
+  </section>
+
+  <section class="rooms">
+    @if (rooms().length === 0) {
+      <p class="empty">Todavia no tienes salas. Crea la primera para iniciar una reunion.</p>
+    }
+
+    @for (room of rooms(); track room.id) {
+      <article class="room-card" [class.ended]="room.status === 'ended'">
+        <div class="room-main">
+          <div class="room-header">
+            <span class="status" [class.active]="room.status === 'active'">
+              {{ roomStatusLabel(room) }}
+            </span>
+            <span class="created-at">{{ roomDate(room) }}</span>
+          </div>
+          <h2>{{ room.title }}</h2>
+          <p class="slug">/{{ room.slug }}</p>
+          <p class="access-code">
+            Clave: <strong>{{ room.accessCode || 'No disponible' }}</strong>
+          </p>
+        </div>
+
+        <div class="room-actions">
+          <div class="invite-box">
+            <input [value]="inviteUrl(room)" readonly aria-label="Link de invitacion" />
+            <button type="button" class="secondary" (click)="copyInvite(room)">
+              {{ copiedRoomId() === room.id ? 'Copiado' : 'Copiar' }}
+            </button>
+          </div>
+
+          <div class="quick-actions">
+            @if (room.status === 'active') {
+              <a [routerLink]="['/conference', room.slug]">Entrar</a>
+              <a class="secondary-link" [routerLink]="['/join', room.slug]">Invitacion</a>
+              <a class="secondary-link" [routerLink]="['/watch', room.slug]">Transmision</a>
+              <button type="button" class="secondary" (click)="copyWatch(room)">
+                {{ copiedRoomId() === room.id + ':watch' ? 'Copiado' : 'Copiar transmision' }}
+              </button>
+              <button type="button" class="danger" (click)="endRoom(room)">
+                Finalizar
+              </button>
+            } @else {
+              <span class="ended-note">Sala finalizada</span>
+            }
+          </div>
+        </div>
+      </article>
+    }
+  </section>
+</main>

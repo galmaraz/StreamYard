@@ -1,0 +1,46 @@
+<main class="join-page">
+  <section class="panel">
+    <p class="eyebrow">Invitacion</p>
+    <h1>{{ room()?.title || 'Cargando sala...' }}</h1>
+    <p class="summary">
+      Entra como invitado usando tu nombre visible. No necesitas crear una
+      cuenta para participar.
+    </p>
+
+    @if (error()) {
+      <p class="error">{{ error() }}</p>
+    }
+
+    @if (room()) {
+      <form (ngSubmit)="join()" class="form">
+        <label>
+          Tu nombre
+          <input
+            name="displayName"
+            [(ngModel)]="displayName"
+            autocomplete="name"
+            required
+            minlength="2"
+            placeholder="Ej. Maria"
+          />
+        </label>
+
+        <label>
+          Clave de acceso
+          <input
+            name="accessCode"
+            [(ngModel)]="accessCode"
+            autocomplete="one-time-code"
+            required
+            minlength="3"
+            placeholder="Ej. A1B2C3"
+          />
+        </label>
+
+        <button type="submit" [disabled]="loading()">
+          {{ loading() ? 'Entrando...' : 'Entrar a la sala' }}
+        </button>
+      </form>
+    }
+  </section>
+</main>

@@ -128,4 +128,5 @@ export class MediaDevicesService {
     this.localStream.set(null);
     this.mediaReady.set(false);
   }
+    
 }

@@ -1,4 +1,9 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Not, Repository } from 'typeorm';
 
@@ -29,6 +34,8 @@ export class UsersService {
   ) {}
 
   async create(input: CreateUserInput): Promise<User> {
+    this.assertPersistableRole(input.role);
+
     const existingUser = await this.findByEmail(input.email);
 
     if (existingUser) {
@@ -75,6 +82,8 @@ export class UsersService {
   }
 
   async update(id: string, input: UpdateUserInput): Promise<User> {
+    this.assertPersistableRole(input.role);
+
     const user = await this.findByIdOrFail(id);
 
     if (input.email !== undefined) {
@@ -120,5 +129,13 @@ export class UsersService {
     const user = await this.findByIdOrFail(id);
 
     await this.usersRepository.remove(user);
+  }
+
+  private assertPersistableRole(role?: UserRole): void {
+    if (role === UserRole.Guest) {
+      throw new BadRequestException(
+        'Guest users are temporary and cannot be persisted',
+      );
+    }
   }
 }

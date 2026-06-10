@@ -5,6 +5,7 @@ export type ParticipantResponse = {
   roomId: string;
   userId: string;
   displayName: string;
+  participantRole: string;
   socketId: string | null;
   micEnabled: boolean;
   cameraEnabled: boolean;
@@ -21,6 +22,7 @@ export function toParticipantResponse(
     roomId: participant.roomId,
     userId: participant.userId,
     displayName: participant.displayName,
+    participantRole: participant.participantRole,
     socketId: participant.socketId,
     micEnabled: participant.micEnabled,
     cameraEnabled: participant.cameraEnabled,

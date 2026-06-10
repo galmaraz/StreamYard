@@ -2,6 +2,8 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { compare, hash } from 'bcryptjs';
 import { randomUUID } from 'crypto';
+
+import { AuthenticatedRequest } from '../shared/types/authenticated-request.type';
 import { UserRole } from '../users/user-role.enum';
 import { toUserResponse, UserResponse } from '../users/user-response.type';
 import { UsersService } from '../users/users.service';
@@ -13,6 +15,7 @@ import { RegisterDto } from './dto/register.dto';
 type JwtPayload = {
   sub: string;
   email: string;
+  displayName: string;
   role: string;
 };
 
@@ -57,18 +60,38 @@ export class AuthService {
 
   async guestLogin(guestLoginDto: GuestLoginDto): Promise<AuthResponse> {
     const guestId = randomUUID();
-    const user = await this.usersService.create({
-      email: `guest+${guestId}@weblive.local`,
-      passwordHash: await hash(randomUUID(), 12),
-      displayName: guestLoginDto.displayName,
+    const now = new Date();
+    const user: UserResponse = {
+      id: guestId,
+      email: '',
+      displayName: guestLoginDto.displayName.trim(),
       role: UserRole.Guest,
-    });
+      isActive: true,
+      createdAt: now,
+      updatedAt: now,
+    };
 
-    return this.createAuthResponse(toUserResponse(user));
+    return this.createAuthResponse(user);
   }
 
-  async getProfile(userId: string): Promise<UserResponse> {
-    const user = await this.usersService.findById(userId);
+  async getProfile(
+    authenticatedUser: AuthenticatedRequest['user'],
+  ): Promise<UserResponse> {
+    if (authenticatedUser.role === UserRole.Guest) {
+      const now = new Date();
+
+      return {
+        id: authenticatedUser.id,
+        email: authenticatedUser.email,
+        displayName: authenticatedUser.displayName || 'Invitado',
+        role: UserRole.Guest,
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      };
+    }
+
+    const user = await this.usersService.findById(authenticatedUser.id);
 
     if (!user || !user.isActive) {
       throw new UnauthorizedException('User not found');
@@ -81,6 +104,7 @@ export class AuthService {
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
+      displayName: user.displayName,
       role: user.role,
     };
 

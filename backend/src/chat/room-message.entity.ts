@@ -10,7 +10,6 @@ import {
 
 import { Participant } from '../participants/participant.entity';
 import { Room } from '../rooms/room.entity';
-import { User } from '../users/user.entity';
 
 @Entity({ name: 'room_messages' })
 export class RoomMessage {
@@ -18,7 +17,7 @@ export class RoomMessage {
   id: string;
 
   @Index()
-  @Column({ name: 'room_id' })
+  @Column({ name: 'room_id', type: 'uuid' })
   roomId: string;
 
   @ManyToOne(() => Room, { nullable: false, onDelete: 'CASCADE' })
@@ -26,7 +25,7 @@ export class RoomMessage {
   room: Room;
 
   @Index()
-  @Column({ name: 'participant_id' })
+  @Column({ name: 'participant_id', type: 'uuid' })
   participantId: string;
 
   @ManyToOne(() => Participant, { nullable: false, onDelete: 'CASCADE' })
@@ -34,12 +33,8 @@ export class RoomMessage {
   participant: Participant;
 
   @Index()
-  @Column({ name: 'user_id' })
+  @Column({ name: 'user_id', type: 'uuid' })
   userId: string;
-
-  @ManyToOne(() => User, { nullable: false, onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'user_id' })
-  user: User;
 
   @Column({ name: 'display_name' })
   displayName: string;

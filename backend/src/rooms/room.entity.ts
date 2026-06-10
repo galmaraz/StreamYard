@@ -34,7 +34,10 @@ export class Room {
   @Column({ name: 'is_private', default: false })
   isPrivate: boolean;
 
-  @Column({ name: 'host_id' })
+  @Column({ name: 'access_code', length: 12, default: 'LIVE2026' })
+  accessCode: string;
+
+  @Column({ name: 'host_id', type: 'uuid' })
   hostId: string;
 
   @ManyToOne(() => User, { nullable: false, onDelete: 'CASCADE' })

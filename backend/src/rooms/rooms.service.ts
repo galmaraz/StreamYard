@@ -1,6 +1,7 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+
 import { UsersService } from '../users/users.service';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { RoomResponse, toRoomResponse } from './room-response.type';
@@ -27,11 +28,14 @@ export class RoomsService {
       title: createRoomDto.title,
       slug: await this.createUniqueSlug(createRoomDto.title),
       isPrivate: createRoomDto.isPrivate ?? false,
+      accessCode: this.createAccessCode(),
       hostId: host.id,
       status: RoomStatus.Active,
     });
 
-    return toRoomResponse(await this.roomsRepository.save(room));
+    return toRoomResponse(await this.roomsRepository.save(room), {
+      includeAccessCode: true,
+    });
   }
 
   async findAllByHost(hostId: string): Promise<RoomResponse[]> {
@@ -40,7 +44,7 @@ export class RoomsService {
       order: { createdAt: 'DESC' },
     });
 
-    return rooms.map(toRoomResponse);
+    return rooms.map((room) => toRoomResponse(room, { includeAccessCode: true }));
   }
 
   async findBySlug(slug: string, hostId: string): Promise<RoomResponse> {
@@ -52,7 +56,7 @@ export class RoomsService {
       throw new NotFoundException('Room not found');
     }
 
-    return toRoomResponse(room);
+    return toRoomResponse(room, { includeAccessCode: true });
   }
 
   async findInviteBySlug(slug: string): Promise<RoomResponse> {
@@ -85,7 +89,13 @@ export class RoomsService {
       room.endedAt = new Date();
     }
 
-    return toRoomResponse(await this.roomsRepository.save(room));
+    return toRoomResponse(await this.roomsRepository.save(room), {
+      includeAccessCode: true,
+    });
+  }
+
+  private createAccessCode(): string {
+    return Math.random().toString(36).slice(2, 8).toUpperCase();
   }
 
   private async createUniqueSlug(title: string): Promise<string> {

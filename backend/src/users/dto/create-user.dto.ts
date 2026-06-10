@@ -1,6 +1,8 @@
-import { IsBoolean, IsEmail, IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsBoolean, IsEmail, IsIn, IsOptional, IsString, MinLength } from 'class-validator';
+
 import { UserRole } from '../user-role.enum';
 
+const persistedUserRoles = [UserRole.Admin, UserRole.Host, UserRole.Viewer];
 
 export class CreateUserDto {
   @IsEmail()
@@ -14,7 +16,7 @@ export class CreateUserDto {
   @MinLength(2)
   displayName: string;
 
-  @IsEnum(UserRole)
+  @IsIn(persistedUserRoles)
   role: UserRole;
 
   @IsOptional()

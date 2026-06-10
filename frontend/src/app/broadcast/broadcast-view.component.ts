@@ -14,11 +14,11 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
-import { AuthService } from '../../../../backend/src/auth/auth.service';
+import { AuthService } from '../auth/auth.service';
 import { Participant, Room, RoomSceneState } from '../core/models';
 import { ParticipantsApiService } from '../participants/participants-api.service';
 import { RoomAccessService } from '../rooms/room-access.service';
-import { RoomsService } from '../../../../backend/src/rooms/rooms.service';
+import { RoomsService } from '../rooms/rooms.service';
 import { RemoteVideoComponent } from '../conference/remote-video.component';
 import { RealtimeService } from '../conference/realtime.service';
 import { WebrtcService } from '../conference/webrtc.service';

@@ -23,8 +23,10 @@ export type Room = {
   slug: string;
   status: RoomStatus;
   isPrivate: boolean;
+  accessCode?: string;
   hostId: string;
   invitationPath: string;
+  watchPath: string;
   createdAt: string;
   updatedAt: string;
   endedAt: string | null;
@@ -35,6 +37,7 @@ export type Participant = {
   roomId: string;
   userId: string;
   displayName: string;
+  participantRole: 'participant' | 'spectator';
   socketId: string | null;
   micEnabled: boolean;
   cameraEnabled: boolean;
@@ -51,4 +54,32 @@ export type RoomMessage = {
   displayName: string;
   content: string;
   createdAt: string;
+};
+
+export type StageLayout = 'fullscreen' | 'mainGuests' | 'grid';
+export type ScenePreset = 'midnight' | 'studioBlue' | 'emerald' | 'sunset' | 'custom';
+export type BannerStyle = 'lowerThird' | 'ticker' | 'headline';
+export type BannerSize = 'small' | 'medium' | 'large';
+export type SceneMediaType = 'none' | 'video';
+export type SceneMediaCommand = 'none' | 'play' | 'pause' | 'restart';
+
+export type RoomSceneState = {
+  stageLayout: StageLayout;
+  mainParticipantId: string | null;
+  scenePreset: ScenePreset;
+  sceneBackground: string;
+  sceneBackgroundImageUrl: string;
+  sceneAccent: string;
+  bannerVisible: boolean;
+  bannerText: string;
+  bannerStyle: BannerStyle;
+  bannerSize: BannerSize;
+  bannerBackground: string;
+  bannerTextColor: string;
+  sceneMediaType: SceneMediaType;
+  sceneMediaUrl: string;
+  sceneMediaTitle: string;
+  sceneMediaVisible: boolean;
+  sceneMediaCommand: SceneMediaCommand;
+  sceneMediaCommandId: string;
 };

@@ -2,8 +2,8 @@ import { Component, OnInit, computed, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
-import { User, UserRole } from '../core/models';
 import { AuthService } from '../auth/auth.service';
+import { User, UserRole } from '../core/models';
 import { CreateUserPayload, UsersService } from './users.service';
 
 type UserForm = {
@@ -41,7 +41,7 @@ export class UsersAdminComponent implements OnInit {
     () => this.users().filter((user) => user.isActive).length,
   );
   protected inactiveUsers = computed(() => this.users().length - this.activeUsers());
-  protected roles: UserRole[] = ['admin', 'host', 'guest', 'viewer'];
+  protected roles: UserRole[] = ['admin', 'host', 'viewer'];
 
   constructor(
     private readonly authService: AuthService,

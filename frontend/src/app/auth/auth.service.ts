@@ -26,7 +26,7 @@ export class AuthService {
 
   constructor(
     private readonly http: HttpClient,
-    private readonly authTokenService: AuthTokenService, 
+    private readonly authTokenService: AuthTokenService,
   ) {}
 
   login(payload: LoginPayload): Observable<AuthResponse> {
